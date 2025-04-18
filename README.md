@@ -40,3 +40,4 @@ uv add "mcp[cli]"
 
 Install claude desktop
 
+uv run mcp install main.py
