@@ -15,11 +15,19 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-# Get the bearer token from environment variables
+# Get environment variables
 MILESTONE_API_TOKEN = os.getenv('MILESTONE_API_TOKEN')
+MILESTONE_API_BASE_URL = os.getenv('MILESTONE_API_BASE_URL', 'https://t-midgard.milestoneinternet.com')
+
 if not MILESTONE_API_TOKEN:
     raise ValueError("MILESTONE_API_TOKEN not found in environment variables")
+if not MILESTONE_API_BASE_URL:
+    raise ValueError("MILESTONE_API_BASE_URL not found in environment variables")
 
+# Constants for API endpoints
+MILESTONE_API_ENDPOINTS = {
+    "find_profiles": "/api/v1.0/profile/findprofiles"
+}
 # Initialize FastMCP server for Weather tools (SSE)
 mcp = FastMCP("weather")
 
@@ -220,7 +228,7 @@ async def get_profile(profile_id: int) -> str:
         A formatted string containing the profile information,
         or an error message if the profile couldn't be retrieved
     """
-    url = "https://t-midgard.milestoneinternet.com/api/v1.0/profile/findprofiles"
+    url = f"{MILESTONE_API_BASE_URL}{MILESTONE_API_ENDPOINTS['find_profiles']}"
     
     # Prepare the request payload
     payload = {
