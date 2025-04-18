@@ -7,6 +7,18 @@ from starlette.requests import Request
 from starlette.routing import Mount, Route
 from mcp.server import Server
 import uvicorn
+import os
+import json
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
+
+
+# Get the bearer token from environment variables
+MILESTONE_API_TOKEN = os.getenv('MILESTONE_API_TOKEN')
+if not MILESTONE_API_TOKEN:
+    raise ValueError("MILESTONE_API_TOKEN not found in environment variables")
 
 # Initialize FastMCP server for Weather tools (SSE)
 mcp = FastMCP("weather")
@@ -193,6 +205,63 @@ def create_starlette_app(mcp_server: Server, *, debug: bool = False) -> Starlett
             Mount("/messages/", app=sse.handle_post_message),  # Endpoint for posting messages
         ],
     )
+
+
+@mcp.tool()
+async def get_profile(profile_id: int) -> str:
+    """Get profile information from Milestone API.
+    
+    Fetches profile data from the Milestone API for a specified profile ID.
+    
+    Args:
+        profile_id: The ID of the profile to retrieve
+        
+    Returns:
+        A formatted string containing the profile information,
+        or an error message if the profile couldn't be retrieved
+    """
+    url = "https://t-midgard.milestoneinternet.com/api/v1.0/profile/findprofiles"
+    
+    # Prepare the request payload
+    payload = {
+        "selectors": [
+            {
+                "profileId": profile_id
+            }
+        ],
+        "showInactiveProfiles": True
+    }
+    
+    # Set up headers with bearer token
+    headers = {
+        "Authorization": f"Bearer {MILESTONE_API_TOKEN}",
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+    }
+    
+    # Make the API request
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.post(
+                url, 
+                json=payload,
+                headers=headers,
+                timeout=30.0
+            )
+            response.raise_for_status()
+            data = response.json()
+            
+            # Check if we got valid data
+            if not data or not isinstance(data, dict):
+                return "Invalid response from the API"
+            
+            # Format the response - adjust this based on the actual response structure
+            return json.dumps(data, indent=2)
+            
+        except httpx.HTTPStatusError as e:
+            return f"API request failed with status code: {e.response.status_code}"
+        except Exception as e:
+            return f"Failed to fetch profile: {str(e)}"
 
 
 if __name__ == "__main__":
