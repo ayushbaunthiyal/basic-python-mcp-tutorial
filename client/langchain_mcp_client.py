@@ -6,11 +6,16 @@ from langchain_core.messages import ToolMessage, AIMessage
 from langchain_mcp_adapters.client import MultiServerMCPClient
 from langgraph.prebuilt import create_react_agent
 from langchain_openai import ChatOpenAI
+from pathlib import Path
 
 load_dotenv()
 model = ChatOpenAI(model="gpt-4o-mini", api_key=os.getenv('OPENAI_API_KEY'))
 
 async def main():
+     # Get the project root directory and server path
+    project_root = Path(__file__).parent.parent
+    server_script = project_root / "server" / "main.py"
+
     # Get user input
     user_query = input("What would you like to know about? ")
 
@@ -20,7 +25,7 @@ async def main():
                 "arxiv_server": {
                     "transport": "stdio",
                     "command": "python",
-                    "args": ["main.py"]
+                    "args": [str(server_script)]  # Use the full path to main.py
                 }
             }
     ) as client:
