@@ -9,6 +9,8 @@ from mcp.server import Server
 import uvicorn
 import os
 import json
+import requests
+import xml.etree.ElementTree as ET
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -34,6 +36,47 @@ mcp = FastMCP("weather")
 # Constants for NWS (National Weather Service) API
 NWS_API_BASE = "https://api.weather.gov"
 USER_AGENT = "weather-app/1.0"
+
+
+@mcp.tool()
+async def search_arxiv(topic, max_results=5):
+    """
+    Search for arXiv papers related to a topic.
+
+    Parameters:
+        topic (str): The topic or keywords to search for.
+        max_results (int): Number of results to retrieve.
+
+    Returns:
+        List of dictionaries with paper details (title, authors, summary, link).
+    """
+    base_url = "http://export.arxiv.org/api/query?"
+    query = f"search_query=all:{topic}&start=0&max_results={max_results}"
+    response = requests.get(base_url + query)
+
+    if response.status_code != 200:
+        raise Exception("Failed to fetch results from arXiv API.")
+
+    root = ET.fromstring(response.content)
+    ns = {'atom': 'http://www.w3.org/2005/Atom'}
+
+    papers = []
+    for entry in root.findall('atom:entry', ns):
+        title = entry.find('atom:title', ns).text.strip()
+        summary = entry.find('atom:summary', ns).text.strip()
+        link = entry.find('atom:id', ns).text.strip()
+        authors = [author.find('atom:name', ns).text for author in entry.findall('atom:author', ns)]
+        papers.append({
+            'title': title,
+            'authors': authors,
+            'summary': summary,
+            'link': link
+        })
+
+    return papers
+
+
+
 
 
 async def make_nws_request(url: str) -> dict[str, Any] | None:
