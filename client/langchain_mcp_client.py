@@ -22,11 +22,16 @@ async def main():
     # This is the Langchain MCP adapater for MCP servers
     async with MultiServerMCPClient(
             {
-                "arxiv_server": {
-                    "transport": "stdio",
-                    "command": "python",
-                    "args": [str(server_script)]  # Use the full path to main.py
+               "arxiv_server": {
+                    # you need run the server.py to have the mcp server run on 8000
+                    "url": "http://127.0.0.1:8080/sse",
+                    "transport": "sse",
                 }
+                # "arxiv_server": {
+                #     "transport": "stdio",
+                #     "command": "python",
+                #     "args": [str(server_script)]  # Use the full path to main.py
+                # }
             }
     ) as client:
         agent = create_react_agent(model, client.get_tools())
